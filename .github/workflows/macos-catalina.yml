@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - build/macos-catalina-v1.2.4
+      - feature/background-multithread-download
   pull_request:
     branches:
       - main
+      - build/macos-catalina-v1.2.4
   workflow_dispatch:
 
 permissions:
@@ -98,9 +100,10 @@ jobs:
           PY
 
       - name: Upload DMG
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: NetMount-1.2.4-macos-catalina-x86_64
           path: src-tauri/target/release/bundle/dmg/*.dmg
+          archive: false
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
