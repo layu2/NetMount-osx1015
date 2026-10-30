@@ -120,6 +120,8 @@ async function reupStorage(options: { cleanupInvalidInternalStorages?: boolean; 
     hooks.upStorage()
   } catch (error) {
     logger.error('Critical error in reupStorage:', error as Error, 'StorageManager')
+    // 严格模式将失败交给新主窗口展示；兼容旧调用仍保持原有吞错行为
+    if (options.strictRclone) throw error
     // 即使出错也触发更新，避免 UI 卡住
     hooks.upStorage()
   }
