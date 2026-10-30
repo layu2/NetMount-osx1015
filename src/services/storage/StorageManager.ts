@@ -21,7 +21,10 @@ import { cleanupStorageOnDelete } from '../../utils/tempCleanup'
  * Refresh and update storage list from both rclone and OpenList
  * Cleans up invalid internal storages automatically
  */
-async function reupStorage() {
+async function reupStorage(options: { cleanupInvalidInternalStorages?: boolean; includeOpenList?: boolean; strictRclone?: boolean } = {}) {
+  const cleanupInvalidInternalStorages = options.cleanupInvalidInternalStorages ?? true
+  const includeOpenList = options.includeOpenList ?? true
+  const strictRclone = options.strictRclone ?? false
   try {
     const storageListTemp: StorageList[] = []
     const storagesToDelete: string[] = []
@@ -49,8 +52,11 @@ async function reupStorage() {
         // 检查是否是失效的内部存储（标记为 -2）
         if (space.total === -2 && storageName.includes('.netmount-')) {
           logger.warn(`Detected invalid internal storage: ${storageName}, will cleanup`, 'StorageManager')
-          storagesToDelete.push(storageName)
-          continue // 不添加到列表
+          if (cleanupInvalidInternalStorages) {
+            storagesToDelete.push(storageName)
+            continue // 仅在允许清理时从列表中排除
+          }
+          // 安全刷新模式只展示，不删除失效内部配置
         }
 
         storageListTemp.push({
@@ -74,11 +80,12 @@ async function reupStorage() {
       }
     } catch (rcloneError) {
       logger.error('Failed to fetch rclone storage list:', rcloneError as Error, 'StorageManager')
-      // rclone 失败不影响 openlist 的加载
+      // 默认模式下 rclone 失败不影响 OpenList 加载；严格模式交由调用方显示错误
+      if (strictRclone) throw rcloneError
     }
 
     // openlist
-    try {
+    if (includeOpenList) try {
       const response = await openlist_api_get('/api/admin/storage/list')
       const responseData = response.data as { content?: OpenlistStorageItem[] } | undefined
       const list = (responseData?.content) || []
