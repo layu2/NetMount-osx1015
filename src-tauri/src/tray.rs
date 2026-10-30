@@ -40,12 +40,7 @@ impl Tray {
                     if button == tauri::tray::MouseButton::Left
                         && button_state == tauri::tray::MouseButtonState::Up
                     {
-                        if let Some(window) = icon.app_handle().app_main_window() {
-                            // Keep the main window visible; clicking the tray icon only shows/focuses it.
-                            let _ = window.unminimize();
-                            let _ = window.show();
-                            let _ = window.set_focus();
-                        } else {
+                        if !show_main_window(icon.app_handle()) {
                             show_webview_error_dialog();
                         }
                     }
@@ -54,46 +49,39 @@ impl Tray {
             });
             tray.on_menu_event(|app, event| match event.id.as_ref() {
                 "show" => {
-                    if let Some(window) = app.app_main_window() {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    } else {
+                    if !show_main_window(app) {
                         show_webview_error_dialog();
                     }
                 }
                 "storage" => {
-                    if let Some(window) = app.app_main_window() {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = app.emit("netmount://navigate", "/storage/manage");
+                    if show_main_window(app) {
+                        if let Err(error) = app.emit("netmount://navigate", "/storage/manage") {
+                            eprintln!("[tray] failed to navigate to storage: {error}");
+                        }
                     } else {
                         show_webview_error_dialog();
                     }
                 }
                 "mount" | "transmit" | "task" | "setting" => {
-                    if let Some(window) = app.app_main_window() {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
+                    if show_main_window(app) {
                         let path = match event.id.as_ref() {
                             "mount" => "/mount",
                             "transmit" => "/transmit",
                             "task" => "/task",
                             _ => "/setting",
                         };
-                        let _ = app.emit("netmount://navigate", path);
+                        if let Err(error) = app.emit("netmount://navigate", path) {
+                            eprintln!("[tray] failed to navigate to {path}: {error}");
+                        }
                     } else {
                         show_webview_error_dialog();
                     }
                 }
                 "add_storage" => {
-                    if let Some(window) = app.app_main_window() {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                        let _ = app.emit("netmount://add-storage", ());
+                    if show_main_window(app) {
+                        if let Err(error) = app.emit("netmount://add-storage", ()) {
+                            eprintln!("[tray] failed to open add-storage page: {error}");
+                        }
                     } else {
                         show_webview_error_dialog();
                     }
@@ -108,6 +96,43 @@ impl Tray {
             });
             Ok(Self(tray))
         })
+    }
+}
+
+
+/// Bring the configured main webview to the foreground from a tray action.
+/// Keep every native-window error visible in the log; silently ignoring these
+/// errors made the Catalina regression impossible to diagnose.
+fn show_main_window(app: &tauri::AppHandle<Runtime>) -> bool {
+    let Some(window) = app.app_main_window() else {
+        eprintln!("[tray] main webview window does not exist");
+        return false;
+    };
+
+    for (operation, result) in [
+        ("unminimize", window.unminimize()),
+        ("show", window.show()),
+        ("focus", window.set_focus()),
+    ] {
+        if let Err(error) = result {
+            eprintln!("[tray] main window {operation} failed: {error}");
+            return false;
+        }
+    }
+
+    match window.is_visible() {
+        Ok(true) => {
+            eprintln!("[tray] main window shown and focused");
+            true
+        }
+        Ok(false) => {
+            eprintln!("[tray] show() returned success but main window is still hidden");
+            false
+        }
+        Err(error) => {
+            eprintln!("[tray] failed to query main window visibility: {error}");
+            false
+        }
     }
 }
 
