@@ -104,9 +104,34 @@ impl Tray {
 /// Keep every native-window error visible in the log; silently ignoring these
 /// errors made the Catalina regression impossible to diagnose.
 fn show_main_window(app: &tauri::AppHandle<Runtime>) -> bool {
-    let Some(window) = app.app_main_window() else {
-        eprintln!("[tray] main webview window does not exist");
-        return false;
+    let window = match app.app_main_window() {
+        Some(window) => window,
+        None => {
+            eprintln!("[tray] main webview window is missing; attempting to recreate it");
+            match tauri::WebviewWindowBuilder::new(
+                app,
+                "main",
+                tauri::WebviewUrl::App("index.html".into()),
+            )
+            .title("NetMount")
+            .inner_size(850.0, 600.0)
+            .min_inner_size(700.0, 450.0)
+            .resizable(true)
+            .decorations(false)
+            .transparent(false)
+            .visible(false)
+            .build()
+            {
+                Ok(window) => {
+                    eprintln!("[tray] recreated main webview window");
+                    window
+                }
+                Err(error) => {
+                    eprintln!("[tray] failed to recreate main webview window: {error}");
+                    return false;
+                }
+            }
+        }
     };
 
     for (operation, result) in [
