@@ -311,6 +311,15 @@ pub fn init() -> anyhow::Result<()> {
             };
             app.update_app_config()?;
 
+            // Explicitly activate the main window on startup. On macOS Catalina,
+            // a visible window in tauri.conf.json may still remain behind the menu bar
+            // or fail to become the active application after a background launch.
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
+
             //开发者工具
             #[cfg(debug_assertions)]
             if let Some(window) = app.app_main_window() {
