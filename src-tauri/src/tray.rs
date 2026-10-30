@@ -15,7 +15,12 @@ impl Tray {
             let menu = tauri::menu::MenuBuilder::new(app)
                 .items(&[
                     &build_item("show", locale.get("tray_show"))?,
+                    &build_item("storage", locale.get("storage"))?,
                     &build_item("add_storage", &format!("{} {}", locale.get("add"), locale.get("storage")))?,
+                    &build_item("mount", locale.get("mount"))?,
+                    &build_item("transmit", locale.get("transmit"))?,
+                    &build_item("task", locale.get("task"))?,
+                    &build_item("setting", locale.get("setting"))?,
                     &build_item("restart", locale.get("tray_restart"))?,
                     &build_item("quit", locale.get("quit"))?,
                 ])
@@ -53,6 +58,32 @@ impl Tray {
                         let _ = window.unminimize();
                         let _ = window.show();
                         let _ = window.set_focus();
+                    } else {
+                        show_webview_error_dialog();
+                    }
+                }
+                "storage" => {
+                    if let Some(window) = app.app_main_window() {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        let _ = app.emit("netmount://navigate", "/storage/manage");
+                    } else {
+                        show_webview_error_dialog();
+                    }
+                }
+                "mount" | "transmit" | "task" | "setting" => {
+                    if let Some(window) = app.app_main_window() {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        let path = match event.id.as_ref() {
+                            "mount" => "/mount",
+                            "transmit" => "/transmit",
+                            "task" => "/task",
+                            _ => "/setting",
+                        };
+                        let _ = app.emit("netmount://navigate", path);
                     } else {
                         show_webview_error_dialog();
                     }
