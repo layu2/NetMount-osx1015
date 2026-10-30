@@ -9,6 +9,7 @@ import { startRclone } from '../utils/rclone/process'
 import { rclone_api_noop } from '../utils/rclone/request'
 import { reupStorage } from '../services/storage/StorageManager'
 import { useStorageStore } from '../stores/storageStore'
+import StorageManagerPanel from './StorageManagerPanel'
 import './main-window.css'
 
 type Page = 'home' | 'storage' | 'mount' | 'transmit' | 'task' | 'setting'
@@ -91,7 +92,7 @@ function MainWindow() {
     </aside>
     <main className="nm-main">
       <header><div><small>NETMOUNT WORKSPACE</small><strong>{active.label}</strong></div><span>NetMount · 1.2.4</span></header>
-      {page === 'storage' ? <section className="nm-content"><div className="nm-storage-head"><div><h1>网盘管理</h1><p className="nm-sub">当前先接入 rclone 网盘的只读列表；不会添加、编辑或删除配置。</p></div><button className="nm-refresh" disabled={refreshing} onClick={refreshStorages}>{refreshing ? '正在刷新…' : '刷新列表'}</button></div>{storageError ? <div className="nm-storage-error">{storageError}</div> : null}<div className="nm-storage-list">{storageList.filter(item => !item.hide).map(item => <div className="nm-storage-row" key={item.framework + ':' + item.name}><span className="nm-storage-cloud">☁</span><div className="nm-storage-meta"><b>{item.name}</b><small>{item.framework === 'rclone' ? 'rclone' : 'OpenList'} · {item.type}</small></div><span className="nm-storage-space">{item.space && item.space.total > 0 ? (item.space.total / 1024 / 1024 / 1024).toFixed(1) + ' GB 总量' : '容量暂不可用'}</span></div>)}{storageList.filter(item => !item.hide).length === 0 ? <div className="nm-storage-empty">尚未加载网盘列表。点击“刷新列表”连接本机 rclone 服务。</div> : null}</div><div className="nm-storage-safe">安全模式：本页刷新不会清理失效的 .netmount-* 内部配置；OpenList 服务暂未启动或查询。</div></section> : page === 'home' ? <section className="nm-content">
+      {page === 'storage' ? <StorageManagerPanel storageList={storageList} refreshing={refreshing} error={storageError} onRefresh={refreshStorages} ensureReady={prepareRclone} /> : page === 'home' ? <section className="nm-content">
         <div className="nm-hero"><small>PERSONAL CLOUD HUB</small><h1>管理你的云存储，<br/>从这里开始。</h1><p>统一管理网盘连接、本地挂载与文件传输。</p><div className="nm-orbit"><b>N</b></div></div>
         <h2>快捷入口</h2><p className="nm-sub">选择一个模块继续操作</p>
         <div className="nm-grid">{pages.slice(1).map(p=><button key={p.id} onClick={()=>setPage(p.id)}><i>{p.icon}</i><b>{p.label}</b><small>{p.desc}</small><em>→</em></button>)}</div>
