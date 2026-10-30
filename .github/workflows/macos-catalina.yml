@@ -54,11 +54,23 @@ jobs:
       - name: Build macOS DMG
         run: pnpm exec tauri build --bundles dmg
 
-      - name: Verify app architecture and deployment target
+      - name: Verify DMG app architecture and deployment target
         shell: bash
         run: |
           set -euo pipefail
-          APP_PATH="$(find src-tauri/target/release/bundle -name 'NetMount.app' -type d -print -quit)"
+          DMG_PATH="$(find src-tauri/target/release/bundle/dmg -maxdepth 1 -name '*.dmg' -type f -print -quit)"
+          test -n "$DMG_PATH"
+          echo "Verifying DMG: $DMG_PATH"
+
+          MOUNT_POINT="$(mktemp -d)"
+          cleanup() {
+            hdiutil detach "$MOUNT_POINT" -quiet 2>/dev/null || true
+            rmdir "$MOUNT_POINT" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          hdiutil attach "$DMG_PATH" -nobrowse -readonly -mountpoint "$MOUNT_POINT"
+          APP_PATH="$(find "$MOUNT_POINT" -name 'NetMount.app' -type d -print -quit)"
           test -n "$APP_PATH"
           APP_BIN="$APP_PATH/Contents/MacOS/netmount"
           test -f "$APP_BIN"
