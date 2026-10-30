@@ -1,6 +1,4 @@
 import ReactDOM from 'react-dom/client'
-import './services/i18n'
-import './index.css'
 import MainWindow from './rebuild/MainWindow'
 
 const container = document.getElementById('root')
