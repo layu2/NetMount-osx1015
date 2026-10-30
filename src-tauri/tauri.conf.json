@@ -7,14 +7,27 @@
   },
   "bundle": {
     "createUpdaterArtifacts": true,
-    "targets": ["nsis", "dmg", "app", "deb", "rpm", "appimage"],
+    "targets": [
+      "nsis",
+      "dmg",
+      "app",
+      "deb",
+      "rpm",
+      "appimage"
+    ],
     "active": true,
     "category": "DeveloperTool",
     "copyright": "(C) 2024-Present  VirtualHotBar",
     "shortDescription": "Cloud storage management tools",
     "longDescription": "Unified management and mounting of cloud storage facilities",
-    "resources": ["binaries/**/*"],
-    "icon": ["img/icons/icon.png", "img/icons/icon.icns", "img/icons/icon.ico"],
+    "resources": [
+      "binaries/**/*"
+    ],
+    "icon": [
+      "img/icons/icon.png",
+      "img/icons/icon.icns",
+      "img/icons/icon.ico"
+    ],
     "windows": {
       "certificateThumbprint": null,
       "digestAlgorithm": "sha256",
@@ -25,7 +38,10 @@
       "nsis": {
         "sidebarImage": "img/nsis/sidebar.bmp",
         "headerImage": "img/nsis/header.bmp",
-        "languages": ["SimpChinese", "English"],
+        "languages": [
+          "SimpChinese",
+          "English"
+        ],
         "installerIcon": "img/icons/icon.ico",
         "installerHooks": "pack/nsis/hooks.nsh"
       }
