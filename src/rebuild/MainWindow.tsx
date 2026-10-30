@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import { homeDir } from '@tauri-apps/api/path'
-import { invoke } from '@tauri-apps/api/core'
 import { runtimeEnv, readNmConfig, configService } from '../services/ConfigService'
 import { rcloneInfo } from '../services/rclone'
 import { getOsInfo } from '../utils/tauri/osInfo'
@@ -33,7 +32,9 @@ function MainWindow() {
     if (!configService.getCacheDir()) configService.setCacheDir(defaultCacheDir())
     const cacheDir = configService.getCacheDir()
     if (!cacheDir) throw new Error('缓存目录未配置')
-    await invoke('fs_make_dir', { path: cacheDir })
+    // Do not call the Rust fs_make_dir command for cacheDir: its production
+    // path guard only permits the app data directory, while the default cache
+    // directory is ~/.cache/netmount. startRclone creates its own subfolders.
     if (rcloneInfo.process.child) {
       if (!(await rclone_api_noop())) throw new Error('检测到 rclone 进程记录，但服务未响应；为避免影响现有进程，本次不会自动重启')
     } else {
@@ -45,11 +46,20 @@ function MainWindow() {
     if (refreshing) return
     setRefreshing(true)
     setStorageError('')
+    let step = '准备系统环境'
     try {
+      runtimeEnv.path.homeDir = await homeDir()
+      step = '读取系统信息'
+      await getOsInfo()
+      step = '读取应用配置'
+      await readNmConfig()
+      step = '准备 rclone 服务'
       await prepareRclone()
+      step = '读取网盘列表'
       await reupStorage({ cleanupInvalidInternalStorages: false, includeOpenList: false, strictRclone: true })
     } catch (error) {
-      setStorageError(error instanceof Error ? error.message : String(error))
+      const detail = error instanceof Error ? error.message : String(error)
+      setStorageError(`${step}失败：${detail}`)
     } finally {
       setRefreshing(false)
     }
