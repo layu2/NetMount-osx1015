@@ -240,15 +240,25 @@ function App() {
     hooks.setLocaleStr = setLocaleStr
   }, [])
 
-  // Native tray menu shortcut: open the full provider picker directly.
+  // Native tray shortcuts can open every main section without relying on
+  // the main window having been visible before the user chose the menu item.
   useEffect(() => {
-    let unlisten: (() => void) | undefined
+    let unlistenAdd: (() => void) | undefined
+    let unlistenNavigate: (() => void) | undefined
     listen('netmount://add-storage', () => {
       navigate('/storage/manage/add')
     }).then(fn => {
-      unlisten = fn
+      unlistenAdd = fn
     })
-    return () => unlisten?.()
+    listen<string>('netmount://navigate', event => {
+      navigate(event.payload)
+    }).then(fn => {
+      unlistenNavigate = fn
+    })
+    return () => {
+      unlistenAdd?.()
+      unlistenNavigate?.()
+    }
   }, [navigate])
 
   useEffect(() => {
