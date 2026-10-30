@@ -59,3 +59,6 @@ export {
   type AlistStorageItem,
   type ImportResult,
 } from './AlistImportService'
+
+// Native background HTTP download engine (provider direct URLs)
+export { downloadWithBackgroundEngine, type BackgroundDownloadResult } from './BackgroundDownloadService'

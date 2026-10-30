@@ -14,6 +14,7 @@ use tray::Tray;
 mod autostart;
 mod config;
 mod diagnostics;
+mod downloader;
 mod fs;
 mod locale;
 mod sidecar;
@@ -247,6 +248,7 @@ pub fn init() -> anyhow::Result<()> {
     let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
 
     builder.invoke_handler(tauri::generate_handler![
+            downloader::download_url_multithread,
             toggle_devtools,
             get_config,
             update_config,
