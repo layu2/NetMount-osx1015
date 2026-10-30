@@ -46,7 +46,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Sync application version
-        run: pnpm run sync-version
+        run: node scripts/sync-version.mjs
 
       - name: Build macOS DMG
         run: pnpm exec tauri build --bundles dmg
