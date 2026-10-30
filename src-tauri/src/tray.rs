@@ -1,4 +1,5 @@
-use crate::{AppExt, Locale, Runtime, State, WindowExt};
+use crate::{AppExt, Locale, Runtime, State};
+use tauri::Emitter;
 
 #[allow(dead_code)]
 pub struct Tray(pub tauri::tray::TrayIcon<Runtime>);
