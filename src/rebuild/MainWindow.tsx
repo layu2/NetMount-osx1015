@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
+import { homeDir } from '@tauri-apps/api/path'
+import { invoke } from '@tauri-apps/api/core'
+import { runtimeEnv, readNmConfig, configService } from '../services/ConfigService'
+import { rcloneInfo } from '../services/rclone'
+import { getOsInfo } from '../utils/tauri/osInfo'
+import { defaultCacheDir } from '../utils/netmountPaths'
+import { startRclone } from '../utils/rclone/process'
+import { rclone_api_noop } from '../utils/rclone/request'
+import { reupStorage } from '../services/storage/StorageManager'
+import { useStorageStore } from '../stores/storageStore'
 import './main-window.css'
 
 type Page = 'home' | 'storage' | 'mount' | 'transmit' | 'task' | 'setting'
@@ -13,6 +23,37 @@ const pages: { id: Page; label: string; icon: string; desc: string }[] = [
 ]
 function MainWindow() {
   const [page, setPage] = useState<Page>('home')
+  const [refreshing, setRefreshing] = useState(false)
+  const [storageError, setStorageError] = useState('')
+  const storageList = useStorageStore(state => state.storageList)
+  const prepareRclone = async () => {
+    runtimeEnv.path.homeDir = await homeDir()
+    await getOsInfo()
+    await readNmConfig()
+    if (!configService.getCacheDir()) configService.setCacheDir(defaultCacheDir())
+    const cacheDir = configService.getCacheDir()
+    if (!cacheDir) throw new Error('缓存目录未配置')
+    await invoke('fs_make_dir', { path: cacheDir })
+    if (rcloneInfo.process.child) {
+      if (!(await rclone_api_noop())) throw new Error('检测到 rclone 进程记录，但服务未响应；为避免影响现有进程，本次不会自动重启')
+    } else {
+      await startRclone()
+    }
+    if (!(await rclone_api_noop())) throw new Error('rclone 服务启动后未能通过就绪检查')
+  }
+  const refreshStorages = async () => {
+    if (refreshing) return
+    setRefreshing(true)
+    setStorageError('')
+    try {
+      await prepareRclone()
+      await reupStorage({ cleanupInvalidInternalStorages: false, includeOpenList: false, strictRclone: true })
+    } catch (error) {
+      setStorageError(error instanceof Error ? error.message : String(error))
+    } finally {
+      setRefreshing(false)
+    }
+  }
   useEffect(() => {
     let alive = true
     let off1: (() => void) | undefined
@@ -43,7 +84,7 @@ function MainWindow() {
     </aside>
     <main className="nm-main">
       <header><div><small>NETMOUNT WORKSPACE</small><strong>{active.label}</strong></div><span>NetMount · 1.2.4</span></header>
-      {page === 'home' ? <section className="nm-content">
+      {page === 'storage' ? <section className="nm-content"><div className="nm-storage-head"><div><h1>网盘管理</h1><p className="nm-sub">当前先接入 rclone 网盘的只读列表；不会添加、编辑或删除配置。</p></div><button className="nm-refresh" disabled={refreshing} onClick={refreshStorages}>{refreshing ? '正在刷新…' : '刷新列表'}</button></div>{storageError ? <div className="nm-storage-error">{storageError}</div> : null}<div className="nm-storage-list">{storageList.filter(item => !item.hide).map(item => <div className="nm-storage-row" key={item.framework + ':' + item.name}><span className="nm-storage-cloud">☁</span><div className="nm-storage-meta"><b>{item.name}</b><small>{item.framework === 'rclone' ? 'rclone' : 'OpenList'} · {item.type}</small></div><span className="nm-storage-space">{item.space && item.space.total > 0 ? (item.space.total / 1024 / 1024 / 1024).toFixed(1) + ' GB 总量' : '容量暂不可用'}</span></div>)}{storageList.filter(item => !item.hide).length === 0 ? <div className="nm-storage-empty">尚未加载网盘列表。点击“刷新列表”连接本机 rclone 服务。</div> : null}</div><div className="nm-storage-safe">安全模式：本页刷新不会清理失效的 .netmount-* 内部配置；OpenList 服务暂未启动或查询。</div></section> : page === 'home' ? <section className="nm-content">
         <div className="nm-hero"><small>PERSONAL CLOUD HUB</small><h1>管理你的云存储，<br/>从这里开始。</h1><p>统一管理网盘连接、本地挂载与文件传输。</p><div className="nm-orbit"><b>N</b></div></div>
         <h2>快捷入口</h2><p className="nm-sub">选择一个模块继续操作</p>
         <div className="nm-grid">{pages.slice(1).map(p=><button key={p.id} onClick={()=>setPage(p.id)}><i>{p.icon}</i><b>{p.label}</b><small>{p.desc}</small><em>→</em></button>)}</div>
