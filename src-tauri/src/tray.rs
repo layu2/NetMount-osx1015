@@ -34,9 +34,9 @@ impl Tray {
                         && button_state == tauri::tray::MouseButtonState::Up
                     {
                         if let Some(window) = icon.app_handle().app_main_window() {
-                            let _ = window.toggle_visibility(None);
+                            // Keep the main window visible; clicking the tray icon only shows/focuses it.
+                            let _ = window.toggle_visibility(Some(true));
                         } else {
-                            // 窗口不存在（可能是 WebView2 未安装），显示原生错误提示
                             show_webview_error_dialog();
                         }
                     }
@@ -48,7 +48,6 @@ impl Tray {
                     if let Some(window) = app.app_main_window() {
                         let _ = window.toggle_visibility(Some(true));
                     } else {
-                        // 窗口不存在（可能是 WebView2 未安装），显示原生错误提示
                         show_webview_error_dialog();
                     }
                 }
@@ -70,7 +69,6 @@ fn show_webview_error_dialog() {
     #[cfg(target_os = "windows")]
     {
         use std::process::Command;
-        // 使用 PowerShell 显示原生消息框
         let _ = Command::new("powershell")
             .args(&[
                 "-Command",
@@ -88,10 +86,9 @@ fn show_webview_error_dialog() {
             ])
             .spawn();
     }
-    
+
     #[cfg(not(target_os = "windows"))]
     {
-        // 非 Windows 平台使用 eprintln 输出错误
         eprintln!("无法显示主窗口。请检查系统是否安装了必要的 WebView 运行时。");
     }
 }
