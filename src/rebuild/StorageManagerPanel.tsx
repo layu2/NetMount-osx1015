@@ -31,7 +31,7 @@ export default function StorageManagerPanel({ storageList, refreshing, error, on
       const list = await updateRcloneStorageInfoList()
       setProviders(list)
       if (!list.length) throw new Error('未能读取 rclone 存储类型列表')
-      setSelectedType(list[0]!.type); setStorageName(''); setParams({}); setOriginalParams({}); setMode('add')
+      setSelectedType(list[0]!.type); setStorageName(''); setParams(Object.fromEntries(list[0]!.defaultParams.parameters.map(p => [p.name, p.default])) as ParametersType); setOriginalParams({}); setMode('add')
     } catch (e) { setFormError(e instanceof Error ? e.message : String(e)) }
     finally { setBusy(false) }
   }
