@@ -67,7 +67,7 @@
         "width": 850,
         "minHeight": 450,
         "minWidth": 700,
-        "transparent": true,
+        "transparent": false,
         "decorations": false,
         "visible": true
       }
