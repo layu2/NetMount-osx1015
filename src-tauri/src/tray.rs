@@ -92,3 +92,5 @@ fn show_webview_error_dialog() {
         eprintln!("无法显示主窗口。请检查系统是否安装了必要的 WebView 运行时。");
     }
 }
+
+impl State for Tray {}
