@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { listen } from '@tauri-apps/api/event'
 import './main-window.css'
 
@@ -31,7 +31,9 @@ function MainWindow() {
       .then(fn => { if (alive) off2 = fn; else fn() }).catch(() => {})
     return () => { alive = false; if (off1) off1(); if (off2) off2() }
   }, [])
-  const active = pages.filter(p => p.id === page)[0] || pages[0]
+  const active = pages.find(p => p.id === page) ?? {
+    id: 'home' as Page, label: '首页', icon: '⌂', desc: '运行状态与快捷入口',
+  }
   return <div className="nm-shell">
     <aside className="nm-sidebar">
       <div className="nm-brand"><div className="nm-logo">N</div><div><b>NetMount</b><small>云存储管理</small></div></div>
