@@ -45,8 +45,11 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Sync application version
+        run: pnpm run sync-version
+
       - name: Build macOS DMG
-        run: pnpm run tauri-build -- --bundles dmg
+        run: pnpm exec tauri build --bundles dmg
 
       - name: Verify app architecture and deployment target
         shell: bash
@@ -71,11 +74,12 @@ jobs:
           test -n "$MIN_OS"
           python3 - "$MIN_OS" <<'PY'
           import sys
-          from packaging.version import Version
-          minimum = Version(sys.argv[1])
-          required = Version("10.15")
+          def parts(value):
+              return tuple(int(part) for part in value.split(".")[:3])
+          minimum = parts(sys.argv[1])
+          required = (10, 15, 0)
           if minimum > required:
-              raise SystemExit(f"Binary requires macOS {minimum}, newer than 10.15")
+              raise SystemExit(f"Binary requires macOS {sys.argv[1]}, newer than 10.15")
           PY
 
       - name: Upload DMG
