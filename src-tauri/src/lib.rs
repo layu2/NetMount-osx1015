@@ -161,6 +161,7 @@ impl WindowExt for tauri::WebviewWindow<Runtime> {
     fn toggle_visibility(&self, preferred_show: Option<bool>) -> anyhow::Result<()> {
         let open = preferred_show.unwrap_or_else(|| !self.is_visible().unwrap_or(false));
         if open {
+            self.unminimize()?;
             self.show()?;
             self.set_focus()?;
         } else {

@@ -2,6 +2,7 @@ import React, { Suspense, useEffect, useMemo, useState } from 'react'
 import { Layout, Menu, Button, Message, Grid, ConfigProvider, Spin } from '@arco-design/web-react'
 import '@arco-themes/react-vhbs/css/arco.css'
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom'
+import { listen } from '@tauri-apps/api/event'
 import { useTranslation } from 'react-i18next'
 
 import { Routers } from './type/routers'
@@ -238,6 +239,17 @@ function App() {
   useEffect(() => {
     hooks.setLocaleStr = setLocaleStr
   }, [])
+
+  // Native tray menu shortcut: open the full provider picker directly.
+  useEffect(() => {
+    let unlisten: (() => void) | undefined
+    listen('netmount://add-storage', () => {
+      navigate('/storage/manage/add')
+    }).then(fn => {
+      unlisten = fn
+    })
+    return () => unlisten?.()
+  }, [navigate])
 
   useEffect(() => {
     hooks.navigate = (path: string) => {

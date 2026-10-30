@@ -14,6 +14,7 @@ impl Tray {
             let menu = tauri::menu::MenuBuilder::new(app)
                 .items(&[
                     &build_item("show", locale.get("tray_show"))?,
+                    &build_item("add_storage", &format!("{} {}", locale.get("add"), locale.get("storage")))?,
                     &build_item("restart", locale.get("tray_restart"))?,
                     &build_item("quit", locale.get("quit"))?,
                 ])
@@ -35,7 +36,9 @@ impl Tray {
                     {
                         if let Some(window) = icon.app_handle().app_main_window() {
                             // Keep the main window visible; clicking the tray icon only shows/focuses it.
-                            let _ = window.toggle_visibility(Some(true));
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
                         } else {
                             show_webview_error_dialog();
                         }
@@ -46,7 +49,19 @@ impl Tray {
             tray.on_menu_event(|app, event| match event.id.as_ref() {
                 "show" => {
                     if let Some(window) = app.app_main_window() {
-                        let _ = window.toggle_visibility(Some(true));
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                    } else {
+                        show_webview_error_dialog();
+                    }
+                }
+                "add_storage" => {
+                    if let Some(window) = app.app_main_window() {
+                        let _ = window.unminimize();
+                        let _ = window.show();
+                        let _ = window.set_focus();
+                        let _ = app.emit("netmount://add-storage", ());
                     } else {
                         show_webview_error_dialog();
                     }
