@@ -26,9 +26,6 @@ function MainWindow() {
   const [storageError, setStorageError] = useState('')
   const storageList = useStorageStore(state => state.storageList)
   const prepareRclone = async () => {
-    runtimeEnv.path.homeDir = await homeDir()
-    await getOsInfo()
-    await readNmConfig()
     if (!configService.getCacheDir()) configService.setCacheDir(defaultCacheDir())
     const cacheDir = configService.getCacheDir()
     if (!cacheDir) throw new Error('缓存目录未配置')
