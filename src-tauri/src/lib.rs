@@ -282,6 +282,15 @@ pub fn init() -> anyhow::Result<()> {
             fs::import_config
         ])
         .setup(|app| {
+            // Catalina menu-bar apps must remain regular foreground applications.
+            // Explicitly restore the Dock/application activation policy before showing windows.
+            #[cfg(target_os = "macos")]
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Regular);
+                app.set_dock_visibility(true);
+                eprintln!("[window] macOS activation policy set to Regular; Dock visible");
+            }
+
             // 初始化 Job Object（Windows 进程树管理）
             if let Err(e) = sidecar::init_job_object() {
                 eprintln!("Failed to initialize job object: {}", e);
@@ -315,9 +324,18 @@ pub fn init() -> anyhow::Result<()> {
             // a visible window in tauri.conf.json may still remain behind the menu bar
             // or fail to become the active application after a background launch.
             if let Some(window) = app.get_webview_window("main") {
-                let _ = window.unminimize();
-                let _ = window.show();
-                let _ = window.set_focus();
+                if let Err(error) = window.unminimize() {
+                    eprintln!("[window] startup unminimize failed: {error}");
+                }
+                if let Err(error) = window.show() {
+                    eprintln!("[window] startup show failed: {error}");
+                }
+                if let Err(error) = window.set_focus() {
+                    eprintln!("[window] startup focus failed: {error}");
+                }
+                eprintln!("[window] startup main window visible={:?}, focused={:?}", window.is_visible(), window.is_focused());
+            } else {
+                eprintln!("[window] startup: configured 'main' webview window is missing");
             }
 
             //开发者工具
