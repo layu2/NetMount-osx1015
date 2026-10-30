@@ -22,7 +22,6 @@
       "webviewInstallMode": {
         "type": "embedBootstrapper"
       },
-
       "nsis": {
         "sidebarImage": "img/nsis/sidebar.bmp",
         "headerImage": "img/nsis/header.bmp",
@@ -32,6 +31,7 @@
       }
     },
     "macOS": {
+      "minimumSystemVersion": "10.15",
       "entitlements": "pack/macos/entitlements.plist",
       "exceptionDomain": "localhost",
       "frameworks": [],
@@ -69,7 +69,7 @@
         "minWidth": 700,
         "transparent": true,
         "decorations": false,
-        "visible": false
+        "visible": true
       }
     ],
     "trayIcon": {
