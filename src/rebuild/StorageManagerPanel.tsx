@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { createStorage } from '../controller/storage/create'
 import { storageInfoList, updateStorageInfoList } from '../controller/storage/allList'
-import { reupStorage } from '../services/storage/StorageManager'
 import { StorageInfoType, StorageParamItemType } from '../type/controller/storage/info'
 import { ParametersType } from '../type/defaults'
-import { delStorage, getStorageParams, renameStorage, searchStorage } from '../services/storage/StorageManager'
+import { delStorage, getStorageParams, renameStorage, searchStorage, reupStorage } from '../services/storage/StorageManager'
 import { StorageList } from '../type/rclone/rcloneInfo'
 
 type Props = { storageList: StorageList[]; refreshing: boolean; error: string; onRefresh: () => Promise<void>; ensureReady: () => Promise<void>; ensureOpenListReady: () => Promise<void> }
