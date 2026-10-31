@@ -28,6 +28,11 @@ function MainWindow() {
   const [storageError, setStorageError] = useState('')
   const storageList = useStorageStore(state => state.storageList)
   const prepareRclone = async () => {
+    // The add/edit dialogs can call this directly, before the user has pressed
+    // "Refresh". Initialize the same runtime prerequisites used by refresh first.
+    runtimeEnv.path.homeDir = await homeDir()
+    await getOsInfo()
+    await readNmConfig()
     if (!configService.getCacheDir()) configService.setCacheDir(defaultCacheDir())
     const cacheDir = configService.getCacheDir()
     if (!cacheDir) throw new Error('缓存目录未配置')
@@ -47,12 +52,7 @@ function MainWindow() {
     setStorageError('')
     let step = '准备系统环境'
     try {
-      runtimeEnv.path.homeDir = await homeDir()
-      step = '读取系统信息'
-      await getOsInfo()
-      step = '读取应用配置'
-      await readNmConfig()
-      step = '准备 rclone 服务'
+      step = '初始化运行环境并准备 rclone 服务'
       await prepareRclone()
       step = '读取网盘列表'
       await reupStorage({ cleanupInvalidInternalStorages: false, includeOpenList: false, strictRclone: true })
