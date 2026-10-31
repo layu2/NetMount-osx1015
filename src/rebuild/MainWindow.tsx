@@ -10,6 +10,7 @@ import { rclone_api_noop } from '../utils/rclone/request'
 import { reupStorage } from '../services/storage/StorageManager'
 import { useStorageStore } from '../stores/storageStore'
 import StorageManagerPanel from './StorageManagerPanel'
+import MountManagerPanel from './MountManagerPanel'
 import './main-window.css'
 
 type Page = 'home' | 'storage' | 'mount' | 'transmit' | 'task' | 'setting'
@@ -92,7 +93,7 @@ function MainWindow() {
     </aside>
     <main className="nm-main">
       <header><div><small>NETMOUNT WORKSPACE</small><strong>{active.label}</strong></div><span>NetMount · 1.2.4</span></header>
-      {page === 'storage' ? <StorageManagerPanel storageList={storageList} refreshing={refreshing} error={storageError} onRefresh={refreshStorages} ensureReady={prepareRclone} /> : page === 'home' ? <section className="nm-content">
+      {page === 'storage' ? <StorageManagerPanel storageList={storageList} refreshing={refreshing} error={storageError} onRefresh={refreshStorages} ensureReady={prepareRclone} /> : page === 'mount' ? <MountManagerPanel ensureReady={prepareRclone} /> : page === 'home' ? <section className="nm-content">
         <div className="nm-hero"><small>PERSONAL CLOUD HUB</small><h1>管理你的云存储，<br/>从这里开始。</h1><p>统一管理网盘连接、本地挂载与文件传输。</p><div className="nm-orbit"><b>N</b></div></div>
         <h2>快捷入口</h2><p className="nm-sub">选择一个模块继续操作</p>
         <div className="nm-grid">{pages.slice(1).map(p=><button key={p.id} onClick={()=>setPage(p.id)}><i>{p.icon}</i><b>{p.label}</b><small>{p.desc}</small><em>→</em></button>)}</div>
