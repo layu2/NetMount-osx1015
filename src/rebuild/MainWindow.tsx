@@ -70,7 +70,7 @@ function MainWindow() {
       step = '初始化运行环境并准备 rclone 服务'
       await prepareRclone()
       step = '读取网盘列表'
-      await reupStorage({ cleanupInvalidInternalStorages: false, includeOpenList: false, strictRclone: true })
+      await reupStorage({ cleanupInvalidInternalStorages: false, includeOpenList: Boolean(openlistInfo.process.child), strictRclone: true })
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
       setStorageError(`${step}失败：${detail}`)
