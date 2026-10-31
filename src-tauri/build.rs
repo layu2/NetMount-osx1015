@@ -12,10 +12,10 @@ fn get_target_os() -> String {
 
 // OpenList 版本控制
 // 默认固定版本，避免 "latest" 漂移导致的接口不兼容问题
-const DEFAULT_OPENLIST_VERSION: &str = "v4.1.10";
+const DEFAULT_OPENLIST_VERSION: &str = "v4.2.5";
 
 // Build-time env flags:
-// - NETMOUNT_OPENLIST_VERSION: override OpenList version tag (e.g. v4.1.10)
+// - NETMOUNT_OPENLIST_VERSION: override OpenList version tag (e.g. v4.2.5)
 // - NETMOUNT_SKIP_BIN_DOWNLOADS / NETMOUNT_SKIP_DOWNLOADS: disable downloading rclone/openlist/winfsp
 // - NETMOUNT_SKIP_WINFSP_DOWNLOAD: disable WinFsp download only
 // - NETMOUNT_GITHUB_PROXY: GitHub proxy prefix ("" or "0" to disable; default https://gh-proxy.com/)
