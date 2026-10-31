@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { createStorage } from '../controller/storage/create'
-import { updateRcloneStorageInfoList } from '../controller/storage/framework/rclone/providers'
 import { storageInfoList, updateStorageInfoList } from '../controller/storage/allList'
 import { StorageInfoType, StorageParamItemType } from '../type/controller/storage/info'
 import { ParametersType } from '../type/defaults'
@@ -67,7 +66,7 @@ export default function StorageManagerPanel({ storageList, refreshing, error, on
       await updateStorageInfoList()
       const list = storageInfoList.filter(item => item.framework === 'rclone' || (item.framework === 'openlist' && /^(baidunetdisk|139yun|189cloud|189cloudpc)$/i.test(item.type)))
       setProviders(list)
-      if (!list.some(item => item.type === type)) throw new Error('当前 rclone 版本未提供该网盘类型')
+      if (!list.some(item => item.type === type)) throw new Error('当前打包的后端版本未提供该网盘类型')
       const values = await getStorageParams(name)
       setSelectedType(type); setStorageName(name); setParams(values); setOriginalParams(values); setMode('edit')
     } catch (e) { setFormError(e instanceof Error ? e.message : String(e)) }
