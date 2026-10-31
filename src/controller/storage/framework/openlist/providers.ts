@@ -59,7 +59,7 @@ async function updateOpenlistStorageInfoList() {
               required: option.required || false,
               default: '',
               advanced: false,
-              isPassword: false,
+              isPassword: /password|passwd|token|cookie|authorization|secret|apikey|api_key/i.test(option.name || ''),
               mark: [],
             }
 
