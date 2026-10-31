@@ -3,9 +3,12 @@ import { listen } from '@tauri-apps/api/event'
 import { homeDir } from '@tauri-apps/api/path'
 import { runtimeEnv, readNmConfig, configService } from '../services/ConfigService'
 import { rcloneInfo } from '../services/rclone'
+import { openlistInfo } from '../services/openlist'
 import { getOsInfo } from '../utils/tauri/osInfo'
 import { defaultCacheDir } from '../utils/netmountPaths'
 import { startRclone } from '../utils/rclone/process'
+import { startOpenlist } from '../utils/openlist/process'
+import { openlist_api_ping } from '../utils/openlist/request'
 import { rclone_api_noop } from '../utils/rclone/request'
 import { reupStorage } from '../services/storage/StorageManager'
 import { useStorageStore } from '../stores/storageStore'
@@ -45,6 +48,18 @@ function MainWindow() {
       await startRclone()
     }
     if (!(await rclone_api_noop())) throw new Error('rclone 服务启动后未能通过就绪检查')
+  }
+  const prepareOpenList = async () => {
+    // OpenList is started only when the user opens the add-storage workflow.
+    await prepareRclone()
+    if (openlistInfo.process.child) {
+      if (!(await openlist_api_ping())) {
+        throw new Error('检测到 OpenList 进程记录，但服务未响应；为避免影响现有进程，本次不会自动重启')
+      }
+      return
+    }
+    await startOpenlist()
+    if (!(await openlist_api_ping())) throw new Error('OpenList 启动后未能通过就绪检查')
   }
   const refreshStorages = async () => {
     if (refreshing) return
@@ -93,7 +108,7 @@ function MainWindow() {
     </aside>
     <main className="nm-main">
       <header><div><small>NETMOUNT WORKSPACE</small><strong>{active.label}</strong></div><span>NetMount · 1.2.4</span></header>
-      {page === 'storage' ? <StorageManagerPanel storageList={storageList} refreshing={refreshing} error={storageError} onRefresh={refreshStorages} ensureReady={prepareRclone} /> : page === 'mount' ? <MountManagerPanel ensureReady={prepareRclone} /> : page === 'home' ? <section className="nm-content">
+      {page === 'storage' ? <StorageManagerPanel storageList={storageList} refreshing={refreshing} error={storageError} onRefresh={refreshStorages} ensureReady={prepareRclone} ensureOpenListReady={prepareOpenList} /> : page === 'mount' ? <MountManagerPanel ensureReady={prepareRclone} /> : page === 'home' ? <section className="nm-content">
         <div className="nm-hero"><small>PERSONAL CLOUD HUB</small><h1>管理你的云存储，<br/>从这里开始。</h1><p>统一管理网盘连接、本地挂载与文件传输。</p><div className="nm-orbit"><b>N</b></div></div>
         <h2>快捷入口</h2><p className="nm-sub">选择一个模块继续操作</p>
         <div className="nm-grid">{pages.slice(1).map(p=><button key={p.id} onClick={()=>setPage(p.id)}><i>{p.icon}</i><b>{p.label}</b><small>{p.desc}</small><em>→</em></button>)}</div>
