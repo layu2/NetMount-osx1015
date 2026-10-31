@@ -330,13 +330,17 @@ fn check_res_bin() {
                 openlist: build_openlist_url(&openlist_version, "linux", arch),
             },
         },
+        // rclone releases built with Go 1.25+ require macOS 12 because
+        // crypto/x509 references SecTrustCopyCertificateChain. Catalina 10.15
+        // is supported through rclone v1.70.3; never use the moving "current"
+        // URL for macOS bundles.
         "macos" => match arch {
             "x86_64" => ResBinUrls {
-                rclone: "https://downloads.rclone.org/rclone-current-osx-amd64.zip",
+                rclone: "https://downloads.rclone.org/v1.70.3/rclone-v1.70.3-osx-amd64.zip",
                 openlist: build_openlist_url(&openlist_version, "macos", arch),
             },
             "arm64" | "aarch64" => ResBinUrls {
-                rclone: "https://downloads.rclone.org/rclone-current-osx-arm64.zip",
+                rclone: "https://downloads.rclone.org/v1.70.3/rclone-v1.70.3-osx-arm64.zip",
                 openlist: build_openlist_url(&openlist_version, "macos", arch),
             },
             _ => ResBinUrls {
