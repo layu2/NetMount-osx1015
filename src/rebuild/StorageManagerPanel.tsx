@@ -10,6 +10,7 @@ type Props = { storageList: StorageList[]; refreshing: boolean; error: string; o
 
 export default function StorageManagerPanel({ storageList, refreshing, error, onRefresh, ensureReady }: Props) {
   const [providers, setProviders] = useState<StorageInfoType[]>([])
+  const [providersLoading, setProvidersLoading] = useState(false)
   const [mode, setMode] = useState<'closed' | 'add' | 'edit'>('closed')
   const [selectedType, setSelectedType] = useState('')
   const [storageName, setStorageName] = useState('')
@@ -24,16 +25,32 @@ export default function StorageManagerPanel({ storageList, refreshing, error, on
   const visible = storageList.filter(item => !item.hide)
   const selected = providers.find(item => item.type === selectedType)
 
-  const openAdd = async () => {
-    setBusy(true); setFormError('')
+  const loadProviders = async () => {
+    setProvidersLoading(true)
+    setFormError('')
     try {
-      await ensureReady()
-      const list = await updateRcloneStorageInfoList()
+      const list = await Promise.race([
+        updateRcloneStorageInfoList(),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('读取网盘类型超时，请确认 rclone 服务正常后重试')), 15000)),
+      ])
+      if (!list.length) throw new Error('rclone 未返回可用的网盘类型，请检查 rclone 服务和日志')
       setProviders(list)
-      if (!list.length) throw new Error('未能读取 rclone 存储类型列表')
-      setSelectedType(list[0]!.type); setStorageName(''); setParams(Object.fromEntries(list[0]!.defaultParams.parameters.map(p => [p.name, p.default])) as ParametersType); setOriginalParams({}); setMode('add')
-    } catch (e) { setFormError(e instanceof Error ? e.message : String(e)) }
-    finally { setBusy(false) }
+      setSelectedType(current => list.some(item => item.type === current) ? current : list[0]!.type)
+      setParams(current => Object.keys(current).length ? current : Object.fromEntries(list[0]!.defaultParams.parameters.map(p => [p.name, p.default])) as ParametersType)
+    } catch (e) {
+      setFormError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setProvidersLoading(false)
+    }
+  }
+  const openAdd = () => {
+    setProviders([]); setSelectedType(''); setStorageName(''); setParams({}); setOriginalParams({}); setAdvanced(false); setFormError(''); setMode('add')
+    void (async () => {
+      setBusy(true)
+      try { await ensureReady(); await loadProviders() }
+      catch (e) { setFormError(e instanceof Error ? e.message : String(e)) }
+      finally { setBusy(false) }
+    })()
   }
   const openEdit = async (name: string, type: string) => {
     setBusy(true); setFormError('')
@@ -98,7 +115,7 @@ export default function StorageManagerPanel({ storageList, refreshing, error, on
     {error && <div className="nm-storage-error">{error}</div>}{formError && <div className="nm-storage-error">{formError}</div>}
     <div className="nm-storage-list">{visible.map(item => <div className="nm-storage-row" key={item.framework + ':' + item.name}><span className="nm-storage-cloud">☁</span><div className="nm-storage-meta"><b>{item.name}</b><small>{item.framework} · {item.type}</small></div><span className="nm-storage-space">{item.space && item.space.total > 0 ? (item.space.total / 1024 / 1024 / 1024).toFixed(1) + ' GB 总量' : '容量暂不可用'}</span>{item.framework === 'rclone' && <div className="nm-row-actions"><button onClick={() => openEdit(item.name, item.type)} disabled={busy}>编辑</button><button onClick={() => {setRenameTarget(item.name);setRenameValue(item.name)}} disabled={busy}>重命名</button><button className="nm-danger" onClick={() => setDeleteTarget(item.name)} disabled={busy}>删除</button></div>}</div>)}{visible.length === 0 && <div className="nm-storage-empty">尚未加载网盘列表。点击“刷新列表”连接本机 rclone 服务。</div>}</div>
     <div className="nm-storage-safe">安全说明：刷新不会自动清理 .netmount-* 内部配置；本页仅管理 rclone 网盘，OpenList 服务不会被自动启动。</div>
-    {mode !== 'closed' && <div className="nm-overlay"><div className="nm-dialog"><h2>{mode === 'add' ? '添加网盘' : '编辑网盘'}</h2>{mode === 'add' && <label className="nm-form-field"><span>网盘类型</span><select value={selectedType} onChange={e => changeType(e.target.value)}>{providers.map(p => <option key={p.type} value={p.type}>{p.label.replace('storage.','')} · {p.type}</option>)}</select></label>}<label className="nm-form-field"><span>网盘名称</span><input value={storageName} disabled={mode === 'edit' || busy} onChange={e => setStorageName(e.target.value)} /></label><div className="nm-form-grid">{(selected?.defaultParams.parameters || []).filter(p => !p.hide && (advanced || !p.advanced)).map(field)}</div><button className="nm-text-action" onClick={() => setAdvanced(v => !v)}>{advanced ? '收起高级参数' : '显示高级参数'}</button><div className="nm-dialog-actions"><button onClick={() => setMode('closed')} disabled={busy}>取消</button><button className="nm-primary" onClick={save} disabled={busy}>{busy ? '正在保存…' : '保存'}</button></div></div></div>}
+    {mode !== 'closed' && <div className="nm-overlay"><div className="nm-dialog"><h2>{mode === 'add' ? '添加网盘' : '编辑网盘'}</h2>{mode === 'add' && <><label className="nm-form-field"><span>网盘类型</span><select value={selectedType} disabled={busy || providersLoading || providers.length === 0} onChange={e => changeType(e.target.value)}>{providers.length === 0 && <option value="">{providersLoading || busy ? '正在读取网盘类型…' : '暂无可用类型'}</option>}{providers.map(p => <option key={p.type} value={p.type}>{p.label.replace('storage.','')} · {p.type}</option>)}</select></label>{(providersLoading || busy) && <div className="nm-storage-safe">正在连接本机 rclone 并读取支持的网盘类型…</div>}{formError && <div className="nm-storage-error">{formError}<button onClick={() => { setBusy(true); void (async () => { try { await ensureReady(); await loadProviders() } catch (e) { setFormError(e instanceof Error ? e.message : String(e)) } finally { setBusy(false) } })() }} disabled={busy}>重试</button></div>}</>}<label className="nm-form-field"><span>网盘名称</span><input value={storageName} disabled={mode === 'edit' || busy} onChange={e => setStorageName(e.target.value)} /></label><div className="nm-form-grid">{(selected?.defaultParams.parameters || []).filter(p => !p.hide && (advanced || !p.advanced)).map(field)}</div><button className="nm-text-action" onClick={() => setAdvanced(v => !v)}>{advanced ? '收起高级参数' : '显示高级参数'}</button><div className="nm-dialog-actions"><button onClick={() => setMode('closed')} disabled={busy}>取消</button><button className="nm-primary" onClick={save} disabled={busy || providersLoading || (mode === 'add' && !selected)}>{busy ? '正在加载…' : '保存'}</button></div></div></div>}
     {renameTarget && <div className="nm-overlay"><div className="nm-dialog nm-dialog-small"><h2>重命名网盘</h2><label className="nm-form-field"><span>新名称</span><input value={renameValue} onChange={e => setRenameValue(e.target.value)} /></label><div className="nm-dialog-actions"><button onClick={() => setRenameTarget('')} disabled={busy}>取消</button><button className="nm-primary" onClick={doRename} disabled={busy}>确认重命名</button></div></div></div>}
     {deleteTarget && <div className="nm-overlay"><div className="nm-dialog nm-dialog-small"><h2>确认删除</h2><p>确定删除网盘“{deleteTarget}”？此操作会同时移除引用它的挂载配置，且无法自动撤销。</p><div className="nm-dialog-actions"><button onClick={() => setDeleteTarget('')} disabled={busy}>取消</button><button className="nm-danger-button" onClick={doDelete} disabled={busy}>{busy ? '正在删除…' : '确认删除'}</button></div></div></div>}
   </section>
