@@ -34,10 +34,9 @@ export function detectDriverListStructure(data: unknown): 'object-map' | 'array'
     return 'array'
   }
 
-  if (typeof data === 'object' && Object.keys(data).length > 0) {
-    const record = data as Record<string, unknown>
-    const firstKey = Object.keys(record)[0]
-    const firstValue = record[firstKey] as Record<string, unknown> | undefined
+  if (typeof data === 'object') {
+    const entries = Object.entries(data as Record<string, unknown>)
+    const firstValue = entries[0]?.[1] as Record<string, unknown> | undefined
     if (firstValue && (firstValue.config || firstValue.common || firstValue.additional)) {
       return 'object-map'
     }
