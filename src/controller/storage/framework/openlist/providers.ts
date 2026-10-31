@@ -238,7 +238,7 @@ async function updateOpenlistStorageInfoListFallback(): Promise<StorageInfoType[
               required: option.required || false,
               default: defaultValue,
               advanced: false,
-              isPassword: false,
+              isPassword: /password|passwd|token|cookie|authorization|secret|apikey|api_key/i.test(option.name || ''),
               mark: [],
               hide: ['mount_path', 'order', 'webdav_policy', 'web_proxy', 'remark'].includes(
                 option.name
