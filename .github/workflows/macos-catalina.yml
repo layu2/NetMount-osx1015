@@ -77,6 +77,16 @@ jobs:
           APP_BIN="$APP_PATH/Contents/MacOS/netmount"
           test -f "$APP_BIN"
 
+          # Verify the bundled rclone sidecar itself, not only the Tauri app.
+          # The moving rclone-current URL can silently pick up Go 1.25+ builds
+          # that require macOS 12 and crash on Catalina with
+          # _SecTrustCopyCertificateChain missing.
+          RCLONE_BIN="$APP_PATH/Contents/Resources/binaries/rclone-x86_64-apple-darwin"
+          test -x "$RCLONE_BIN"
+          RCLONE_VERSION="$("$RCLONE_BIN" version | head -n 1)"
+          echo "Bundled rclone: $RCLONE_VERSION"
+          [[ "$RCLONE_VERSION" == "rclone v1.70.3" ]]
+
           ARCHS="$(lipo -archs "$APP_BIN")"
           echo "App architectures: $ARCHS"
           [[ " $ARCHS " == *" x86_64 "* ]]
