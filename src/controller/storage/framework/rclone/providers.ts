@@ -16,7 +16,13 @@ function normalizeStorageId(raw: string): string {
 
 async function updateRcloneStorageInfoList() {
   const response = await rclone_api_post('/config/providers')
-  const providers = (response?.providers as RcloneProvider[]) || []
+  if (!response) {
+    throw new Error('读取 rclone 网盘类型失败：本机服务未响应或 API 请求失败，请查看 rclone 日志')
+  }
+  if (!Array.isArray(response.providers)) {
+    throw new Error('读取 rclone 网盘类型失败：服务返回的数据格式不正确')
+  }
+  const providers = response.providers as RcloneProvider[]
 
   const rcloneStorageInfoList: StorageInfoType[] = []
 
