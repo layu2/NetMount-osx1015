@@ -3,7 +3,7 @@ import { logger } from '../../../../services/LoggerService'
 export function normalizeStorageId(raw: string): string {
   return String(raw ?? '')
     .trim()
-    .replace(/\s+/g, ' ')
+    .replace(/\\s+/g, ' ')
     .toLowerCase()
 }
 
@@ -29,15 +29,31 @@ export function detectDriverListStructure(data: unknown): 'object-map' | 'array'
   if (!data) return 'unknown'
 
   if (Array.isArray(data)) {
-    // Some OpenList builds expose /api/admin/driver/list as a plain
-    // string[] of driver names rather than driver metadata. Those entries
-    // cannot be normalized here; return unknown so the caller falls back
-    // to /api/admin/driver/names + /api/admin/driver/info.
-    if (data.every(driver => typeof driver === 'string')) {
-      logger.info('Driver list contains names only; falling back to driver info endpoint', 'OpenListProviders')
-      return {}
-    }
+    // A names-only response must use the names + info fallback endpoints.
+    if (data.every(driver => typeof driver === 'string')) return 'unknown'
+    return 'array'
+  }
 
+  if (typeof data === 'object' && Object.keys(data).length > 0) {
+    const record = data as Record<string, unknown>
+    const firstKey = Object.keys(record)[0]
+    const firstValue = record[firstKey] as Record<string, unknown> | undefined
+    if (firstValue && (firstValue.config || firstValue.common || firstValue.additional)) {
+      return 'object-map'
+    }
+  }
+
+  return 'unknown'
+}
+
+export function normalizeDriverList(data: unknown): Record<string, DriverInfo> {
+  const structure = detectDriverListStructure(data)
+
+  if (structure === 'object-map') {
+    return data as Record<string, DriverInfo>
+  }
+
+  if (structure === 'array') {
     const result: Record<string, DriverInfo> = {}
     ;(data as DriverInfo[]).forEach(driver => {
       if (!driver || typeof driver !== 'object') return
@@ -47,8 +63,8 @@ export function detectDriverListStructure(data: unknown): 'object-map' | 'array'
     return result
   }
 
-    logger.error('Unknown driver list structure:', undefined, 'OpenListProviders', { data })
-    return {}
+  logger.error('Unknown driver list structure:', undefined, 'OpenListProviders', { data })
+  return {}
 }
 
 export function safeGetDriverConfig(provider: DriverInfo, key: string): { name?: string } {
